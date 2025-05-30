@@ -2274,6 +2274,25 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     document.body.appendChild(panel);
+
+    const style = document.createElement("style");
+style.innerHTML = `
+  @media (max-width: 600px) {
+    #${monitorId} {
+      bottom: 10px !important;
+      top: auto !important;
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%) !important;
+      font-size: 13px !important;
+      width: auto !important;
+      max-width: 90vw !important;
+      padding: 10px 14px !important;
+    }
+  }
+`;
+document.head.appendChild(style);
+
   }
 
     function getLocalStorageSizeInfo() {
@@ -2334,7 +2353,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Header info
   content.innerHTML = `
     • Used: ${totalKB} KB<br>
-    <!-- • Photos in memory: ${photoCount} (${photoKB} KB)<br> -->
     • Available: ${availableKB} KB
   `;
 
