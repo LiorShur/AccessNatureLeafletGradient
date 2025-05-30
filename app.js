@@ -2290,6 +2290,18 @@ style.innerHTML = `
       padding: 10px 14px !important;
     }
   }
+  @media (max-width: 600px) {
+  #localStorageStatus {
+    left: 50% !important;
+    right: auto !important;
+    bottom: 10px !important;
+    transform: translateX(-50%) !important;
+    max-width: 90vw !important;
+    word-wrap: break-word;
+    overflow-x: auto;
+  }
+}
+
 `;
 document.head.appendChild(style);
 
