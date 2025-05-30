@@ -1762,6 +1762,21 @@ ${markersJS}
     </div>\`;
   document.getElementById("accessibilityDetailsContainer").innerHTML = html;
 })();
+
+  new Chart(document.getElementById("chart"), {
+    type: "line",
+    data: {
+      labels: route.map((c, i) => i),
+      datasets: [{
+        label: "Elevation (m)",
+        data: route.map(c => c.elevation),
+        borderColor: "green",
+        tension: 0.3,
+        fill: true
+      }]
+    }
+  });
+
 </script>
 </body>
 </html>
