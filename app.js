@@ -1326,6 +1326,7 @@ async function generateElevationChartCanvas(route) {
   return canvas;
 }
 
+// For imported route test
 // async function exportRouteSummary() {
 //   console.log("📦 Attempting route export...");
 
@@ -1343,33 +1344,31 @@ async function generateElevationChartCanvas(route) {
 //   const notesFolder = zip.folder("notes");
 //   const imagesFolder = zip.folder("images");
 //   const audioFolder = zip.folder("audio");
-  
+//   const mediaForArchive = {};
 
-//   let markersJS = "", pathCoords = [], photoCounter = 1, noteCounter = 1, audioCounter = 1;
-//   const enriched = [];
+//   let markersJS = "", pathCoords = [], enriched = [], photoCounter = 1, noteCounter = 1, audioCounter = 1;
 
 //   for (const entry of routeData) {
 //     if (entry.type === "location") {
 //       pathCoords.push([entry.coords.lat, entry.coords.lng]);
-//       enriched.push(entry);
+//       enriched.push({ ...entry }); // clone for later enrichment
 //     } else if (entry.type === "text") {
 //       notesFolder.file(`note${noteCounter}.txt`, entry.content);
 //       markersJS += `
 // L.marker([${entry.coords.lat}, ${entry.coords.lng}], {
 //   icon: L.divIcon({ className: 'custom-icon', html: '📝' })
-// })
-//   .addTo(map)
+// }).addTo(map)
 //   .bindPopup("<b>Note ${noteCounter}</b><br><pre>${entry.content}</pre>");
 // `;
 //       noteCounter++;
 //     } else if (entry.type === "photo") {
 //       const base64 = entry.content.split(",")[1];
 //       imagesFolder.file(`photo${photoCounter}.jpg`, base64, { base64: true });
+//       mediaForArchive[`photo${photoCounter}.jpg`] = base64;
 //       markersJS += `
 // L.marker([${entry.coords.lat}, ${entry.coords.lng}], {
 //   icon: L.divIcon({ className: 'custom-icon', html: '📸' })
-// })
-//   .addTo(map)
+// }).addTo(map)
 //   .bindPopup("<b>Photo ${photoCounter}</b><br><img src='images/photo${photoCounter}.jpg' style='width:100%' onclick='openFullscreen(this)'>");
 // `;
 //       photoCounter++;
@@ -1385,20 +1384,14 @@ async function generateElevationChartCanvas(route) {
 //     }
 //   }
 
-//   // Load elevation if missing
+//   // Enrich with elevation
 //   for (const entry of enriched) {
-//     if (entry.type === "location" && !entry.elevation) {
+//     if (entry.type === "location" && entry.elevation == null) {
 //       entry.elevation = await getElevation(entry.coords.lat, entry.coords.lng);
 //     }
 //   }
 
-//   // Generate chart canvas
-//   const canvas = await generateElevationChartCanvas(enriched);
-//   const base64Chart = canvas.toDataURL("image/png");
-//   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-//   zip.file("elevation.png", blob);
-
-//   // Accessibility adjustment
+//   // Accessibility computation
 //   let accessibleLength = 0;
 //   for (let i = 1; i < enriched.length; i++) {
 //     const a = enriched[i - 1], b = enriched[i];
@@ -1410,11 +1403,20 @@ async function generateElevationChartCanvas(route) {
 //     }
 //   }
 
-//   const boundsJSON = JSON.stringify(pathCoords);
+//   // Elevation chart PNG
+//   const elevationCanvas = await generateElevationChartCanvas(enriched);
+//   const base64Chart = elevationCanvas.toDataURL("image/png");
+//   const elevationBlob = await new Promise(res => elevationCanvas.toBlob(res, "image/png"));
+//   zip.file("elevation.png", elevationBlob);
+//   mediaForArchive["elevation.png"] = base64Chart.split(",")[1];
+
+//   // Accessibility data
 //   const accessibilityJSON = JSON.stringify({
 //     ...routeData.find(e => e.type === "accessibility")?.content || {},
 //     accessibleLength: accessibleLength.toFixed(0)
 //   });
+
+//   const boundsJSON = JSON.stringify(pathCoords);
 
 //   const htmlContent = `
 // <!DOCTYPE html>
@@ -1434,39 +1436,47 @@ async function generateElevationChartCanvas(route) {
 // </head>
 // <body>
 // <h2>${name}</h2>
-// <div id="summary">
+// <div>
 //   <p><b>Distance:</b> ${totalDistance.toFixed(2)} km</p>
 //   <p><b>Photos:</b> ${photoCounter - 1}</p>
 //   <p><b>Notes:</b> ${noteCounter - 1}</p>
 //   <p><b>Audios:</b> ${audioCounter - 1}</p>
 //   <p><b>Accessible Length:</b> ${accessibleLength.toFixed(0)} m</p>
 // </div>
-
+// <div id="description">
+//     <h4>General Description:</h4>
+//     <textarea placeholder="Add notes or observations about the route here..."></textarea>
+//   </div>
+//   <div id="accessibilityDetailsContainer"></div>
 // <canvas id="chart" width="800" height="200"></canvas>
-// <br><button onclick="document.getElementById('modal').style.display='flex'">🔍 View Chart Fullscreen</button>
-// <div id="modal" onclick="this.style.display='none'"><img src="elevation.png"></div>
+// <!-- <br><button onclick="document.getElementById('modal').style.display='flex'">🔍 View Chart Fullscreen</button>
+//  <div id="modal" onclick="this.style.display='none'"><img src="elevation.png"></div> -->
+
+// <div style="margin-top: 10px;">
+//   <b>Gradient Legend:</b><br>
+//   <span style="color:green">🟩 ≤ 6% (Mild)</span>&nbsp;&nbsp;
+//   <span style="color:orange">🟧 6–10% (Moderate)</span>&nbsp;&nbsp;
+//   <span style="color:red">🟥 > 10% (Steep)</span>
+// </div>
 
 // <div id="map"></div>
 // <script>
 //   const map = L.map('map');
 //   const bounds = L.latLngBounds(${boundsJSON});
 //   map.fitBounds(bounds);
-
 //   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-//   const segments = [];
-//   const coords = ${JSON.stringify(enriched)};
 
-//   function haversine(a, b) {
-//     const toRad = x => x * Math.PI / 180;
-//     const R = 6371;
+//   const route = ${JSON.stringify(enriched)};
+//   const haversine = (a, b) => {
+//     const toRad = x => x * Math.PI / 180, R = 6371;
 //     const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
 //     const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
 //     const a_ = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
 //     return R * 2 * Math.atan2(Math.sqrt(a_), Math.sqrt(1-a_));
-//   }
+//   };
 
-//   for (let i = 1; i < coords.length; i++) {
-//     const a = coords[i-1], b = coords[i];
+//   for (let i = 1; i < route.length; i++) {
+//     const a = route[i - 1], b = route[i];
 //     const dist = haversine(a.coords, b.coords);
 //     const elev = b.elevation - a.elevation;
 //     const grade = (elev / (dist * 1000)) * 100;
@@ -1476,56 +1486,57 @@ async function generateElevationChartCanvas(route) {
 
 //   ${markersJS}
 
-//   const chart = new Chart(document.getElementById("chart"), {
+//   // Accessibility summary rendering
+// // (function(){
+// //   const data = ${accessibilityJSON};
+// //   if (!data) return;
+// //   const html = \`
+// //     <div id="accessibilityDetails">
+// //       <h3>♿ Accessibility Details</h3>
+// //       <ul>
+// //         <li><b>Disabled Parking:</b> \${data.disabledParkingCount}</li>
+// //         <li><b>Path Type:</b> \${data.pathType}</li>
+// //         <li><b>Accessible Length:</b> \${data.accessibleLength} m</li>
+// //         <li><b>Route Type:</b> \${data.routeType}</li>
+// //         <li><b>Slope:</b> \${data.slope}</li>
+// //         <li><b>Points of Interest:</b> \${data.pointsOfInterest}</li>
+// //         <li><b>Lookouts:</b> \${data.lookouts ? "Yes" : "No"}</li>
+// //         <li><b>Picnic Spots:</b> \${data.picnicSpots ? "Yes" : "No"}</li>
+// //         <li><b>Accessible Toilets:</b> \${data.accessibleToilets ? "Yes" : "No"}</li>
+// //         <li><b>Benches:</b> \${data.benches ? "Yes" : "No"}</li>
+// //         <li><b>Shade:</b> \${data.shade}</li>
+// //       </ul>
+// //     </div>\`;
+// //   document.getElementById("accessibilityDetailsContainer").innerHTML = html;
+// // })();
+
+//   new Chart(document.getElementById("chart"), {
 //     type: "line",
 //     data: {
-//       labels: coords.map((c, i) => i),
+//       labels: route.map((c, i) => i),
 //       datasets: [{
 //         label: "Elevation (m)",
-//         data: coords.map(c => c.elevation),
+//         data: route.map(c => c.elevation),
 //         borderColor: "green",
-//         tension: 0.2,
+//         tension: 0.3,
 //         fill: true
 //       }]
 //     }
 //   });
 
-//   function openFullscreen(img) {
-//     const modal = document.getElementById("modal");
-//     modal.querySelector("img").src = img.src;
-//     modal.style.display = 'flex';
-//   }
+//   // function openFullscreen(img) {
+//   //   const modal = document.getElementById("modal");
+//   //   modal.querySelector("img").src = img.src;
+//   //   modal.style.display = 'flex';
+//   // }
 // </script>
 // </body>
 // </html>
 // `;
 
-// const mediaForArchive = {};
-
-// routeData.forEach((entry, i) => {
-//   if (entry.type === "photo") {
-//     const base64 = entry.content.split(",")[1];
-//     mediaForArchive[`photo${i + 1}.jpg`] = base64;
-//   } else if (entry.type === "text") {
-//     mediaForArchive[`note${i + 1}.txt`] = entry.content;
-//   }
-// });
-
-// const coordsWithElevation = routeData.filter(e => e.type === "location" && e.elevation != null);
-// const elevationPngBase64 = await generateElevationChartPNG(coordsWithElevation);
-// mediaForArchive["elevation_chart.png"] = elevationPngBase64;
-
-
-// // ✅ Include summary HTML inside ZIP archive
-// zip.file("index.html", htmlContent);
-
-// // ✅ Save summary for in-app preview compatibility
-// SummaryArchive.saveToArchive(name, htmlContent, {
-//   ...mediaForArchive,
-//   "elevation.png": base64Chart.split(',')[1] // optional
-// });
-
-//   //zip.file("index.html", htmlContent);
+//   // Save full HTML and media
+//   zip.file("index.html", htmlContent);
+//   SummaryArchive.saveToArchive(name, htmlContent, mediaForArchive);
 
 //   try {
 //     const blob = await zip.generateAsync({ type: "blob" });
@@ -1540,11 +1551,18 @@ async function generateElevationChartCanvas(route) {
 //   }
 // }
 
+//For normal app route tracking
 async function exportRouteSummary() {
   console.log("📦 Attempting route export...");
 
   if (!routeData || !Array.isArray(routeData) || routeData.length === 0) {
-    alert("⚠️ No route data available to export.");
+    alert("⚠️ No route data available to export. Please track or load a route first.");
+    return;
+  }
+
+  const hasLocation = routeData.some(entry => entry.type === "location");
+  if (!hasLocation) {
+    alert("⚠️ No location data found in this session.");
     return;
   }
 
@@ -1559,7 +1577,12 @@ async function exportRouteSummary() {
   const audioFolder = zip.folder("audio");
   const mediaForArchive = {};
 
-  let markersJS = "", pathCoords = [], enriched = [], photoCounter = 1, noteCounter = 1, audioCounter = 1;
+  let markersJS = "";
+  let pathCoords = [];
+  let enriched = [];
+  let noteCounter = 1;
+  let photoCounter = 1;
+  let audioCounter = 1;
 
   for (const entry of routeData) {
     if (entry.type === "location") {
@@ -1569,25 +1592,28 @@ async function exportRouteSummary() {
       notesFolder.file(`note${noteCounter}.txt`, entry.content);
       markersJS += `
 L.marker([${entry.coords.lat}, ${entry.coords.lng}], {
-  icon: L.divIcon({ className: 'custom-icon', html: '📝' })
-}).addTo(map)
+  icon: L.divIcon({ className: 'custom-icon', html: '📝', iconSize: [24, 24] })
+})
+  .addTo(map)
+  .bindTooltip("Note ${noteCounter}")
   .bindPopup("<b>Note ${noteCounter}</b><br><pre>${entry.content}</pre>");
 `;
       noteCounter++;
     } else if (entry.type === "photo") {
-      const base64 = entry.content.split(",")[1];
-      imagesFolder.file(`photo${photoCounter}.jpg`, base64, { base64: true });
-      mediaForArchive[`photo${photoCounter}.jpg`] = base64;
+      const base64Data = entry.content.split(",")[1];
+      imagesFolder.file(`photo${photoCounter}.jpg`, base64Data, { base64: true });
       markersJS += `
 L.marker([${entry.coords.lat}, ${entry.coords.lng}], {
-  icon: L.divIcon({ className: 'custom-icon', html: '📸' })
-}).addTo(map)
-  .bindPopup("<b>Photo ${photoCounter}</b><br><img src='images/photo${photoCounter}.jpg' style='width:100%' onclick='openFullscreen(this)'>");
+  icon: L.divIcon({ className: 'custom-icon', html: '📸', iconSize: [24, 24] })
+})
+  .addTo(map)
+  .bindTooltip("Photo ${photoCounter}")
+  .bindPopup("<b>Photo ${photoCounter}</b><br><img src='images/photo${photoCounter}.jpg' style='width:200px'>");
 `;
       photoCounter++;
     } else if (entry.type === "audio") {
-      const base64 = entry.content.split(",")[1];
-      audioFolder.file(`audio${audioCounter}.webm`, base64, { base64: true });
+      const base64Data = entry.content.split(",")[1];
+      audioFolder.file(`audio${audioCounter}.webm`, base64Data, { base64: true });
       markersJS += `
 L.marker([${entry.coords.lat}, ${entry.coords.lng}])
   .addTo(map)
@@ -1623,47 +1649,54 @@ L.marker([${entry.coords.lat}, ${entry.coords.lng}])
   zip.file("elevation.png", elevationBlob);
   mediaForArchive["elevation.png"] = base64Chart.split(",")[1];
 
-  // Accessibility data
-  const accessibilityJSON = JSON.stringify({
-    ...routeData.find(e => e.type === "accessibility")?.content || {},
-    accessibleLength: accessibleLength.toFixed(0)
-  });
+  const accessibilityEntry = routeData.find(e => e.type === "accessibility");
+  const accessibilityData = accessibilityEntry ? accessibilityEntry.content : null;
+  const accessibilityJSON = JSON.stringify(accessibilityData);
 
-  const boundsJSON = JSON.stringify(pathCoords);
+  const boundsVar = JSON.stringify(pathCoords);
 
   const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>${name}</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial; margin: 0; }
-    #map { height: 50vh; }
-    #modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; }
-    #modal img { max-width: 90%; max-height: 90%; }
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #map { height: 60vh; }
+    #summaryPanel { padding: 20px; background: #f7f7f7; }
+    #routeTitle { font-size: 24px; margin-bottom: 10px; color: #2c3e50; }
+    .stats { margin-top: 10px; }
+    .stats b { display: inline-block; width: 120px; }
+    #description { margin-top: 20px; }
+    #description textarea { width: 100%; height: 100px; font-size: 14px; }
+    #accessibilityDetails ul { list-style-type: none; padding-left: 0; }
+    #accessibilityDetails li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
-<h2>${name}</h2>
-<div>
-  <p><b>Distance:</b> ${totalDistance.toFixed(2)} km</p>
-  <p><b>Photos:</b> ${photoCounter - 1}</p>
-  <p><b>Notes:</b> ${noteCounter - 1}</p>
-  <p><b>Audios:</b> ${audioCounter - 1}</p>
-  <p><b>Accessible Length:</b> ${accessibleLength.toFixed(0)} m</p>
-</div>
-<div id="description">
+<div id="summaryPanel">
+  <div id="routeTitle">📍 ${name}</div>
+  <div class="stats">
+    <div><b>Distance:</b> ${totalDistance.toFixed(2)} km</div>
+    <div><b>Time:</b> ${document.getElementById("timer").textContent}</div>
+    <div><b>Photos:</b> ${photoCounter - 1}</div>
+    <div><b>Notes:</b> ${noteCounter - 1}</div>
+    <div><b>Audios:</b> ${audioCounter - 1}</div>
+    <p><b>Accessible Length:</b> ${accessibleLength.toFixed(0)} m</p>
+  </div>
+  <div id="description">
     <h4>General Description:</h4>
     <textarea placeholder="Add notes or observations about the route here..."></textarea>
-  </div>
+    </div>
   <div id="accessibilityDetailsContainer"></div>
+</div>
+
 <canvas id="chart" width="800" height="200"></canvas>
-<!-- <br><button onclick="document.getElementById('modal').style.display='flex'">🔍 View Chart Fullscreen</button>
- <div id="modal" onclick="this.style.display='none'"><img src="elevation.png"></div> -->
 
 <div style="margin-top: 10px;">
   <b>Gradient Legend:</b><br>
@@ -1674,12 +1707,18 @@ L.marker([${entry.coords.lat}, ${entry.coords.lng}])
 
 <div id="map"></div>
 <script>
-  const map = L.map('map');
-  const bounds = L.latLngBounds(${boundsJSON});
-  map.fitBounds(bounds);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+var map = L.map('map');
+var bounds = L.latLngBounds(${boundsVar});
+map.fitBounds(bounds);
 
-  const route = ${JSON.stringify(enriched)};
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+L.polyline(${JSON.stringify(pathCoords)}, { color: 'blue' }).addTo(map);
+
+const route = ${JSON.stringify(enriched)};
   const haversine = (a, b) => {
     const toRad = x => x * Math.PI / 180, R = 6371;
     const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
@@ -1697,9 +1736,10 @@ L.marker([${entry.coords.lat}, ${entry.coords.lng}])
     L.polyline([a.coords, b.coords], { color }).addTo(map);
   }
 
-  ${markersJS}
 
-  // Accessibility summary rendering
+${markersJS}
+
+// Accessibility summary rendering
 (function(){
   const data = ${accessibilityJSON};
   if (!data) return;
@@ -1722,34 +1762,23 @@ L.marker([${entry.coords.lat}, ${entry.coords.lng}])
     </div>\`;
   document.getElementById("accessibilityDetailsContainer").innerHTML = html;
 })();
-
-  new Chart(document.getElementById("chart"), {
-    type: "line",
-    data: {
-      labels: route.map((c, i) => i),
-      datasets: [{
-        label: "Elevation (m)",
-        data: route.map(c => c.elevation),
-        borderColor: "green",
-        tension: 0.3,
-        fill: true
-      }]
-    }
-  });
-
-  // function openFullscreen(img) {
-  //   const modal = document.getElementById("modal");
-  //   modal.querySelector("img").src = img.src;
-  //   modal.style.display = 'flex';
-  // }
 </script>
 </body>
 </html>
 `;
 
-  // Save full HTML and media
-  zip.file("index.html", htmlContent);
+  //const mediaForArchive = {};
+  routeData.forEach((entry, i) => {
+    if (entry.type === "photo") {
+      const base64 = entry.content.split(",")[1];
+      mediaForArchive[`photo${i + 1}.jpg`] = base64;
+    } else if (entry.type === "text") {
+      mediaForArchive[`note${i + 1}.txt`] = entry.content;
+    }
+  });
   SummaryArchive.saveToArchive(name, htmlContent, mediaForArchive);
+
+  zip.file("index.html", htmlContent);
 
   try {
     const blob = await zip.generateAsync({ type: "blob" });
@@ -1758,12 +1787,15 @@ L.marker([${entry.coords.lat}, ${entry.coords.lng}])
     a.href = url;
     a.download = `route-summary-${Date.now()}.zip`;
     a.click();
-    console.log("✅ Export complete.");
+    console.log("✅ Route summary exported successfully.");
   } catch (e) {
-    console.error("❌ ZIP generation failed:", e);
+    console.error("❌ Export failed:", e);
+    alert("❌ Failed to export route summary.");
   }
-}
 
+  resetApp();
+  initMap();
+}
 
 
 async function exportAllRoutes() {
@@ -3013,7 +3045,6 @@ async function generateElevationChartPNG(route) {
   });
 }
 
-
 function haversineDistance(a, b) {
   const toRad = deg => deg * Math.PI / 180;
   const R = 6371;
@@ -3023,13 +3054,6 @@ function haversineDistance(a, b) {
   const a_ = Math.sin(dLat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a_), Math.sqrt(1-a_));
 }
-
-// async function getElevation(lat, lng) {
-//   const url = `https://api.opentopodata.org/v1/test-dataset?locations=${lat},${lng}`;
-//   const res = await fetch(url);
-//   const data = await res.json();
-//   return data.results?.[0]?.elevation ?? null;
-// }
 
 async function generateElevationChartCanvas(route) {
   const canvas = document.createElement("canvas");
