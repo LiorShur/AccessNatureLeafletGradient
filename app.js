@@ -1696,7 +1696,7 @@ L.marker([${entry.coords.lat}, ${entry.coords.lng}])
   <div id="accessibilityDetailsContainer"></div>
 </div>
 
-<canvas id="chart" width="800" height="200"></canvas>
+<canvas id="chart" width="800" height="200">Chart Goes Here</canvas>
 
 <div style="margin-top: 10px;">
   <b>Gradient Legend:</b><br>
