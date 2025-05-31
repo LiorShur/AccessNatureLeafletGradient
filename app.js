@@ -2372,6 +2372,8 @@ document.addEventListener("DOMContentLoaded", () => {
       object-fit: cover;
       border-radius: 3px;
       border: 1px solid #999;
+      max-width: 100%;
+      height: auto;
     `;
 
 img.onclick = () => {
