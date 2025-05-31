@@ -366,15 +366,17 @@ background-color: #2196F3;
   position: fixed;
   bottom: 10px;
   right: 10px;
-  width: 240px;
-  font-family: monospace;
+  max-width: 95vw;
   background: rgba(0, 0, 0, 0.85);
   color: white;
-  border-radius: 6px;
+  font-family: monospace;
   font-size: 12px;
+  padding: 10px;
+  border-radius: 6px;
   z-index: 9999;
-  cursor: move;
-  user-select: none;
+  line-height: 1.5;
+  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .storage-monitor .header {
@@ -402,5 +404,24 @@ background-color: #2196F3;
 @media (max-width: 320px) {
   .button-row {
     overflow-x: scroll;
+  }
+}
+@media (max-width: 600px) {
+  .storage-monitor {
+    top: 10px;
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    font-size: 13px;
+    max-width: 90vw;
+    width: auto;
+    padding: 10px 14px;
+  }
+}
+@media (max-width: 420px) {
+  .storage-monitor {
+    font-size: 11px;
+    padding: 8px;
   }
 }
