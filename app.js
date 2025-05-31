@@ -2251,24 +2251,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!panel) {
     panel = document.createElement("div");
     panel.id = monitorId;
-    panel.style.cssText = `
-      position: fixed;
-  top: 10px;             /* Float at top instead of bottom */
-  right: 10px;
-  max-width: 90vw;       /* Prevent overflow on narrow screens */
-  max-height: 50vh;      /* Avoid covering too much space */
-  overflow: auto;        /* Scroll if content exceeds height */
-  background: rgba(0,0,0,0.85);
-  color: white;
-  font-family: monospace;
-  font-size: 12px;
-  padding: 10px;
-  border-radius: 6px;
-  z-index: 9999;
-  line-height: 1.5;
-  box-sizing: border-box;
-    `;
-
+    panel.className = "storage-monitor";
+  
     panel.innerHTML = `
       <div id="storageHeader" style="cursor: pointer;">📦 localStorage Monitor ▼</div>
       <div id="storageContent"></div>
@@ -2278,86 +2262,6 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     document.body.appendChild(panel);
-
-    const style = document.createElement("style");
-style.innerHTML = `
-  @media (max-width: 600px) {
-    #${monitorId} {
-      bottom: 10px !important;
-      top: auto !important;
-      left: 50% !important;
-      right: auto !important;
-      transform: translateX(-50%) !important;
-      font-size: 13px !important;
-      width: auto !important;
-      max-width: 90vw !important;
-      padding: 10px 14px !important;
-    }
-  }
-    @media (max-width: 420px) {
-  #${monitorId}  {
-    font-size: 11px;
-    padding: 6px;
-    right: 5px;
-    top: 5px;
-    max-width: 95vw;
-    max-height: 40vh;
-  }
-}
-`;
-//     panel.style.cssText = `
-//       position: fixed;
-//       bottom: 10px;
-//       right: 10px;
-//       background: rgba(0,0,0,0.85);
-//       color: white;
-//       font-family: monospace;
-//       font-size: 12px;
-//       padding: 10px;
-//       border-radius: 6px;
-//       z-index: 9999;
-//       line-height: 1.5;
-//     `;
-
-//     panel.innerHTML = `
-//       <div id="storageHeader" style="cursor: pointer;">📦 localStorage Monitor ▼</div>
-//       <div id="storageContent"></div>
-//       <audio id="storageAlertAudio" style="display:none">
-//         <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=" type="audio/wav">
-//       </audio>
-//     `;
-
-//     document.body.appendChild(panel);
-
-//     const style = document.createElement("style");
-// style.innerHTML = `
-//   @media (max-width: 600px) {
-//     #${monitorId} {
-//       bottom: 10px !important;
-//       top: auto !important;
-//       left: 50% !important;
-//       right: auto !important;
-//       transform: translateX(-50%) !important;
-//       font-size: 13px !important;
-//       width: auto !important;
-//       max-width: 90vw !important;
-//       padding: 10px 14px !important;
-//     }
-//   }
-//   @media (max-width: 600px) {
-//   #localStorageStatus {
-//     left: 50% !important;
-//     right: auto !important;
-//     bottom: 10px !important;
-//     transform: translateX(-50%) !important;
-//     max-width: 90vw !important;
-//     word-wrap: break-word;
-//     overflow-x: auto;
-//   }
-// }
-
-// `;
-document.head.appendChild(style);
 
   }
 
