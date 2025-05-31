@@ -2297,9 +2297,11 @@ style.innerHTML = `
     @media (max-width: 420px) {
   #${monitorId}  {
     font-size: 11px;
-    padding: 8px;
+    padding: 6px;
     right: 5px;
     top: 5px;
+    max-width: 95vw;
+    max-height: 40vh;
   }
 }
 `;
