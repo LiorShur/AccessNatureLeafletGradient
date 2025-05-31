@@ -2253,9 +2253,11 @@ document.addEventListener("DOMContentLoaded", () => {
     panel.id = monitorId;
     panel.style.cssText = `
       position: fixed;
-  bottom: 10px;
+  top: 10px;             /* Float at top instead of bottom */
   right: 10px;
-  max-width: 95vw;
+  max-width: 90vw;       /* Prevent overflow on narrow screens */
+  max-height: 50vh;      /* Avoid covering too much space */
+  overflow: auto;        /* Scroll if content exceeds height */
   background: rgba(0,0,0,0.85);
   color: white;
   font-family: monospace;
@@ -2264,7 +2266,6 @@ document.addEventListener("DOMContentLoaded", () => {
   border-radius: 6px;
   z-index: 9999;
   line-height: 1.5;
-  overflow-x: auto;
   box-sizing: border-box;
     `;
 
